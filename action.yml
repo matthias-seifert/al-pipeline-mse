@@ -1,0 +1,38 @@
+name: al-pipeline-composite
+
+inputs:
+  insiderSasToken:
+    description: "The token used to deploy the artifact in a preview environment"
+    required: true
+  licenseFile:
+    description: "The url of the Business Central license file"
+    required: true
+  certPfxUrl:
+    description: CertPfxUrl
+    required: true
+  certPfxPass:
+    description: CertPfxPass
+    required: true
+
+runs:
+    using: "composite"
+    steps:
+      - name: Run pipeline
+        env:
+          InsiderSasToken: ${{inputs.insiderSasToken}}
+          LicenseFile: ${{inputs.licenseFile}}
+          CertPfxUrl: ${{inputs.certPfxUrl}}
+          CertPfxPass: ${{inputs.certPfxPass}}
+        run: ${{github.action_path}}\Run-Pipeline.ps1 -repositoryName ${{env.repositoryName}} -settingsFilename "Pipeline-Settings.json" -settingsVersion ${{env.settingsVersion}} -buildNumber ${{env.buildNumber}}
+        shell: powershell
+
+      - name: Publish Apps Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: Apps
+          path: output/Apps/
+          if-no-files-found: error
+
+      - name: Cleanup
+        run: ${{github.action_path}}\Run-Cleanup.ps1 -repositoryName ${{env.repositoryName}} -settingsFilename "Pipeline-Settings.json" -settingsVersion ${{env.settingsVersion}}
+        shell: powershell
